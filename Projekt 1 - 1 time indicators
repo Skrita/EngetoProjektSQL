@@ -1,0 +1,18 @@
+SELECT 
+	`date`,
+	WEEKDAY(`date`),
+	month(`date`),
+	CASE 
+		WHEN (WEEKDAY(`date`) in (5,6)) then 1
+		WHEN (WEEKDAY(`date`) in (0,1,2,3,4)) then 0
+		ELSE 'Chybi data'
+		END AS 'WEEKEND indicator',
+	CASE 
+		WHEN month(`date`) in (1,2,12) then 0 
+		WHEN month(`date`) in (3,4,5) then 1
+		WHEN month(`date`) in (6,7,8) then 2 
+		WHEN month(`date`) in (9,10,11) then 3 
+		END AS 'Meteorogical Season indicator -NH'
+FROM COVID19_BASIC AS CB
+group BY `date`  ;
+
