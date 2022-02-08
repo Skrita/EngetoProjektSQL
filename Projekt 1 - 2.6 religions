@@ -1,0 +1,67 @@
+SELECT  
+	round(chr.population/p.total_population *100, 1) AS Christianity, 
+	round(isl.population/p.total_population *100, 1) AS Islam,
+	round(unr.population/p.total_population *100, 1) AS Unaffiliated, 
+	round(hin.population/p.total_population *100, 1) AS Hinduism,
+	round(bud.population/p.total_population *100, 1) AS Buddhism,
+	round(fre.population/p.total_population *100, 1) AS Folk,
+	round(ore.population/p.total_population *100, 1) AS Other,
+	round(jud.population/p.total_population *100, 1) AS Judaism
+	FROM religions AS r
+	JOIN (SELECT SUM(population) AS total_population, country
+		FROM religions AS r2
+		WHERE `year`= 2020
+		GROUP BY country, `year`
+	) AS p	
+	ON r.country =p.country 
+	AND `year` =2020
+JOIN (SELECT population, country
+		FROM religions AS r
+		WHERE `year`= 2020 AND r.religion ='Christianity'
+		GROUP BY country, `year`
+	) AS chr	
+	ON r.country =chr.country 
+JOIN (SELECT population, country
+		FROM religions AS r
+		WHERE `year`= 2020 AND r.religion ='Islam'
+		GROUP BY country, `year`
+	) AS isl	
+	ON r.country =isl.country 
+JOIN (SELECT population, country
+		FROM religions AS r
+		WHERE `year`= 2020 AND r.religion ='Unaffiliated Religions'
+		GROUP BY country, `year`
+	) AS unr	
+	ON r.country =unr.country 
+JOIN (SELECT population, country
+		FROM religions AS r
+		WHERE `year`= 2020 AND r.religion ='Hinduism'
+		GROUP BY country, `year`
+	) AS hin	
+	ON r.country =hin.country 
+JOIN (SELECT population, country
+		FROM religions AS r
+		WHERE `year`= 2020 AND r.religion ='Buddhism'
+		GROUP BY country, `year`
+	) AS bud	
+	ON r.country =bud.country
+JOIN (SELECT population, country
+		FROM religions AS r
+		WHERE `year`= 2020 AND r.religion ='Folk Religions'
+		GROUP BY country, `year`
+	) AS fre	
+	ON r.country =fre.country
+JOIN (SELECT population, country
+		FROM religions AS r
+		WHERE `year`= 2020 AND r.religion ='Other Religions'
+		GROUP BY country, `year`
+	) AS ore	
+	ON r.country =ore.country
+JOIN (SELECT population, country
+		FROM religions AS r
+		WHERE `year`= 2020 AND r.religion ='Judaism'
+		GROUP BY country, `year`
+	) AS jud	
+	ON r.country =jud.country
+GROUP BY r.country 
+;	
