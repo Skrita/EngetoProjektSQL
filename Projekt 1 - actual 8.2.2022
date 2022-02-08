@@ -1,0 +1,37 @@
+SELECT 
+	cb.`date`,
+	cb.COUNTRY,
+	CASE 
+		WHEN (WEEKDAY(`date`) in (5,6)) then 1
+		WHEN (WEEKDAY(`date`) in (0,1,2,3,4)) then 0
+		ELSE 'Chybi data'
+		END AS '1.1-WEEKEND indic.',	
+		(4+(CASE 
+			WHEN month(`date`) in (1,2,12) then 0 
+			WHEN month(`date`) in (3,4,5) then 1
+			WHEN month(`date`) in (6,7,8) then 2 
+			WHEN month(`date`) in (9,10,11) then 3 
+			END  
+		- 
+		CASE WHEN  c.north > 0 then 0
+			ELSE 2
+			end))%4 as '1.2-Meteo season by hemi.'
+		/* north - rozlisovac severni a jizni polokoule, 4+ a modulo pro spravne formatovani)*/
+	/*CONCAT(c.north,' ', COUNTRY) as control severu*/
+	,
+	c.population_density as '2.1-Hustota zalidneni',
+	ROUND(e.gdp/e.population,2) AS '2.2-HDP na obyvatele', /* mozna problematicke pri kontrole vypadalo ok, ale rozhodne to neni osetrene*/
+	e.gini AS '2.3-GINI coef',
+	e.mortaliy_under5 AS '2.4 Detska umrtnost',
+	c.median_age_2018 AS '2.5-Median veku 2018'
+	/*(SELECT r.population 
+	FROM RELIGIONS R 
+	where (r.RELIGION like 'ch%')and (r.country=cb.country))*/
+FROM COVID19_BASIC AS CB
+LEFT JOIN COUNTRIES AS C 
+	ON CB.country = C.COUNTRY 
+JOIN (SELECT e.gdp, e.gini, e.population, e.country, e.mortaliy_under5 
+	FROM ECONOMIES AS E 
+	WHERE e.YEAR=2020) AS E
+ON cb.country= E.COUNTRY
+;
