@@ -1,0 +1,141 @@
+CREATE TABLE t_Gustav_Galik_projekt_SQL_final AS
+SELECT 
+	cb.`date`,
+	cb.country,
+	CASE 
+		WHEN (WEEKDAY(cb.`date`) in (5,6)) then 1
+		WHEN (WEEKDAY(cb.`date`) in (0,1,2,3,4)) then 0
+		ELSE 'Chybi data'
+		END AS '1.1-WEEKEND indic.',	
+		(4+(CASE 
+			WHEN month(cb.`date`) in (1,2,12) then 0 
+			WHEN month(cb.`date`) in (3,4,5) then 1
+			WHEN month(cb.`date`) in (6,7,8) then 2 
+			WHEN month(cb.`date`) in (9,10,11) then 3 
+			END  
+		- 
+		CASE WHEN  c.north > 0 then 0
+			ELSE 2
+			end))%4 as '1.2-Meteo season by hemi.'
+		/* north - rozlisovac severni a jizni polokoule, 4+ a modulo pro spravne formatovani)*/
+	/*CONCAT(c.north,' ', COUNTRY) as control severu*/
+	,
+	c.population_density as '2.1-Hustota zalidneni',
+	ROUND(e.gdp/e.population,2) AS '2.2-HDP na obyvatele', /* mozna problematicke pri kontrole vypadalo ok, ale rozhodne to neni osetrene*/
+	eg.gini AS '2.3-GINI coef',
+	e.mortaliy_under5 AS '2.4 Detska umrtnost',
+	c.median_age_2018 AS '2.5 Median veku 2018',
+	rel.Christianity AS '2.6 Christianity' ,
+	rel.Islam  AS '2.6 Islam',
+	rel.Unaffiliated AS '2.6 Unaffiliated',  
+	rel.Hinduism AS '2.6 Hinduism',
+	rel.Buddhism AS '2.6 Buddhism',
+	rel.Folk AS '2.6 Folk',
+	rel.Other AS '2.6 Other',
+	rel.Judaism AS '2.6 Judaism',
+	lexp.rozdil_1965_2015 AS '2.7 Rozdil v doziti mezi roky 1965 a 2015',
+	dayw.avg_day_temp AS '3.1 Prumerna denni teplota v °C',
+	dayw.day_rain_hours AS '3.2 Pocet hodin deste pres den',
+	dayw.max_day_gust AS '3.3 Maximalni narazovy vitr pres den v km/h'
+FROM covid19_basic_differences AS cb
+LEFT JOIN countries AS c 
+	ON cb.country = c.country 
+LEFT JOIN (SELECT e.GDP, e.population, e.country, e.mortaliy_under5 
+	FROM economies AS e 
+	WHERE e.YEAR=2019) AS e
+ON cb.country= e.country
+LEFT JOIN (SELECT e.country, round(avg(e.gini),2) as gini
+	FROM economies AS e 
+	WHERE gini IS NOT NULL AND e.`year` >2000
+	GROUP BY country) AS eg
+ON cb.country= eg.country 
+LEFT JOIN (SELECT
+	r.country,
+	round(chr.population/p.total_population *100, 1) AS Christianity, 
+	round(isl.population/p.total_population *100, 1) AS Islam,
+	round(unr.population/p.total_population *100, 1) AS Unaffiliated, 
+	round(hin.population/p.total_population *100, 1) AS Hinduism,
+	round(bud.population/p.total_population *100, 1) AS Buddhism,
+	round(fre.population/p.total_population *100, 1) AS Folk,
+	round(ore.population/p.total_population *100, 1) AS Other,
+	round(jud.population/p.total_population *100, 1) AS Judaism
+	FROM religions AS r
+	JOIN (SELECT SUM(population) AS total_population, country
+		FROM religions AS r2
+		WHERE `year`= 2020
+		GROUP BY country, `year`
+	) AS p	
+	ON r.country =p.country 
+	AND `year` =2020
+	JOIN (SELECT population, country
+		FROM religions AS r
+		WHERE `year`= 2020 AND r.religion ='Christianity'
+		GROUP BY country, `year`
+	) AS chr	
+	ON r.country =chr.country 
+	JOIN (SELECT population, country
+		FROM religions AS r
+		WHERE `year`= 2020 AND r.religion ='Islam'
+		GROUP BY country, `year`
+	) AS isl	
+	ON r.country =isl.country 
+	JOIN (SELECT population, country
+		FROM religions AS r
+		WHERE `year`= 2020 AND r.religion ='Unaffiliated Religions'
+		GROUP BY country, `year`
+	) AS unr	
+	ON r.country =unr.country 
+	JOIN (SELECT population, country
+		FROM religions AS r
+		WHERE `year`= 2020 AND r.religion ='Hinduism'
+		GROUP BY country, `year`
+	) AS hin	
+	ON r.country =hin.country 
+	JOIN (SELECT population, country
+		FROM religions AS r
+		WHERE `year`= 2020 AND r.religion ='Buddhism'
+		GROUP BY country, `year`
+	) AS bud	
+	ON r.country =bud.country
+	JOIN (SELECT population, country
+		FROM religions AS r
+		WHERE `year`= 2020 AND r.religion ='Folk Religions'
+		GROUP BY country, `year`
+	) AS fre	
+	ON r.country =fre.country
+	JOIN (SELECT population, country
+		FROM religions AS r
+		WHERE `year`= 2020 AND r.religion ='Other Religions'
+		GROUP BY country, `year`
+	) AS ore	
+	ON r.country =ore.country
+	JOIN (SELECT population, country
+		FROM religions AS r
+		WHERE `year`= 2020 AND r.religion ='Judaism'
+		GROUP BY country, `year`
+	) AS jud	
+	ON r.country =jud.country
+GROUP BY r.country) AS rel
+ON rel.country = cb.country
+LEFT JOIN (SELECT le2015.country, le2015.life_expectancy AS 'Doziti 2015', le1965.life_expectancy AS 'Doziti 1965', round( le2015.life_expectancy/le1965.life_expectancy,3)*100 AS 'Percentile change', round(le2015.life_expectancy-le1965.life_expectancy,2) AS rozdil_1965_2015
+		FROM (SELECT * 
+			FROM life_expectancy AS le
+		WHERE `year` =2015) AS le2015
+	LEFT JOIN (SELECT * 
+		FROM life_expectancy AS le
+		WHERE `year` =1965) AS le1965
+	ON le2015.country=le1965.country
+	WHERE le2015.life_expectancy-le1965.life_expectancy) AS lexp
+ON lexp.country=cb.country
+LEFT JOIN (SELECT dw.date,dw.city, 
+	avg(dw.temp_nu) AS avg_day_temp,
+	SUM(CASE WHEN dw.rain_nu >0 THEN 1 ELSE 0 END)*3 AS day_rain_hours,
+	max(dw.gust_nu) AS max_day_gust
+FROM (SELECT w.date,w.`time`, w.city, LEFT (w.rain,LENGTH (w.rain)-3) AS rain_nu,  LEFT (w.temp,LENGTH (w.temp)-4) AS temp_nu, LEFT (w.gust,LENGTH (w.gust)-5) AS gust_nu
+FROM weather AS w 
+WHERE w.time >= '06:00' AND w.time <= '18:00' AND city IS NOT NULL) AS dw
+GROUP BY dw.date, dw.city
+) AS dayw
+ON dayw.city =c.capital_city 
+	AND cb.date=dayw.date
+;
