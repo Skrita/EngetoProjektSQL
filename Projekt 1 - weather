@@ -1,0 +1,9 @@
+SELECT dw.date,dw.city, 
+	avg(dw.temp_nu) AS avg_day_temp,
+	SUM(CASE WHEN dw.rain_nu >0 THEN 1 ELSE 0 END)*3 AS day_rain_hours,
+	max(dw.gust_NU) AS max_day_gust
+FROM (SELECT w.date,w.`time`, w.city, LEFT (w.rain,LENGTH (w.rain)-3) AS rain_nu,  LEFT (w.temp,LENGTH (w.temp)-4) AS temp_nu, LEFT (w.gust,LENGTH (w.gust)-5) AS gust_nu
+FROM weather AS w 
+WHERE w.time >= '06:00' AND w.time <= '18:00' AND city IS NOT NULL) AS dw
+GROUP BY dw.date, dw.city
+;
