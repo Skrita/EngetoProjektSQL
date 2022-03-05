@@ -137,5 +137,4 @@ LEFT JOIN (
 		GROUP BY dw.date, dw.city
 	) AS dayw
 	ON dayw.city = c.capital_city 
-	AND cb.date = dayw.date
-;
+	AND cb.date = dayw.date;
