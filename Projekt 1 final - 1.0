@@ -19,7 +19,7 @@ SELECT
 		/* north - rozlisovac severni a jizni polokoule, 4+ a modulo pro spravne formatovani)*/
 	/*CONCAT(c.north,' ', COUNTRY) as control severu*/
 	c.population_density as '2_1_Hustota_zalidneni',
-	ROUND(e.gdp / e.population , 2) AS '2_2_HDP_na_obyvatele', /* mozna problematicke pri kontrole vypadalo ok, ale rozhodne to neni osetrene*/
+	ROUND(e.gdp / e.population , 2) AS '2_2_HDP_na_obyvatele',
 	eg.gini AS '2_3_GINI_koef',
 	e.mortaliy_under5 AS '2_4_Detska_umrtnost',
 	c.median_age_2018 AS '2_5_Median_veku_2018',
@@ -123,7 +123,7 @@ LEFT JOIN (SELECT le2015.country, le2015.life_expectancy AS 'Doziti 2015', le196
 		FROM life_expectancy AS le
 		WHERE `year` = 1965) AS le1965
 	ON le2015.country = le1965.country
-	/*WHERE le2015.life_expectancy-le1965.life_expectancy*/) AS lexp
+	) AS lexp
 	ON lexp.country = cb.country
 LEFT JOIN (
 	SELECT 
